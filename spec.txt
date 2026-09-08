@@ -1,0 +1,157 @@
+Design Document: tpt-teleop-marine (Maritime, Underwater & Offshore Operations)
+Version: 1.0.0 (v1 Monolithic Release)
+Date: August 26, 2026
+Status: Approved for Development
+Sister Repositories: tpt-teleop, tpt-teleop-fleet, tpt-t-agri
+(Note: Repository retains the full tpt-teleop-marine name. All internal crates use the simplified tpt-t-marine- prefix.)
+1. Executive Summary
+tpt-teleop-marine is the hyper-optimized, zero-bloat, Rust-based middleware workspace designed to operate in the most physically hostile and communication-starved environment on Earth: the ocean.
+While tpt-teleop-fleet orchestrates 2D warehouse floors with millimeter WiFi precision, and tpt-t-agri handles hectare-scale fields with RTK GPS, tpt-teleop-marine tackles full 3D navigation without GPS, acoustic communication at 100 bits per second, and pressure environments that would crush a human. It orchestrates AUVs (Autonomous Underwater Vehicles), ROVs (Remotely Operated Vehicles), ASVs (Autonomous Surface Vessels), and gliders for offshore wind inspection, subsea pipeline survey, aquaculture, defense, and scientific oceanography.
+The fundamental challenges are unique: radio waves do not penetrate water, GPS does not exist below the surface, sound travels at 1500 m/s (introducing 666ms latency per kilometer), and a single seal failure means the loss of a $2 million vehicle. This spec is built around those constraints.
+2. Licensing & Dependency Policy
+Project License: MIT OR Apache-2.0.
+Dependency Policy: Strictly enforces the MIT/BSD/ISC chain. cargo-deny rejects any Apache-only dependencies. Dual-licensed crates are resolved strictly under MIT.
+3. Workspace Architecture (The Crates)
+The repository is structured as a Cargo Workspace. Every crate uses the simplified tpt-t-marine- prefix.
+Core & 3D Navigation
+tpt-t-marine-core: The central event loop, mission state machine (Dive → Transit → Survey → Surface → Recover), and lock-free message bus.
+tpt-t-marine-nav: GPS-denied 3D navigation. Fuses INS (Inertial Navigation System), DVL (Doppler Velocity Log), pressure depth sensors, and acoustic positioning (USBL/LBL/SBL) via a custom zero-allocation Extended Kalman Filter.
+tpt-t-marine-buoyancy: Unique to marine. Manages variable ballast systems, trim pumps, and buoyancy engines. Handles the physics of compression at depth (vehicles get heavier as neoprene compresses).
+tpt-t-marine-acoustic: Acoustic modem integration. Custom ultra-low-bandwidth protocol stack for WHOI Micro-Modem, EvoLogics, and LinkQuest. Handles the brutal reality of 60% packet loss and multi-path fading.
+Vehicle-Specific Execution
+tpt-t-marine-auv: Autonomous underwater vehicle mission execution. Waypoint following in 3D space, adaptive sampling (deciding where to go next based on sensor data), and "sleep-wake" power management for multi-month deployments.
+tpt-t-marine-rov: Tethered ROV control. 6DOF thruster coordination, manipulator arm control, and real-time video/telemetry over fiber-optic tethers.
+tpt-t-marine-asv: Autonomous surface vessel control. Waypoint following, dynamic positioning (DP), and station-keeping in currents and waves.
+tpt-t-marine-glider: Buoyancy-driven glider control. Ultra-low-power flight using only buoyancy changes and a rudder, for multi-month, trans-oceanic missions.
+tpt-t-marine-tether: ROV tether management system (TMS). Real-time catenary physics simulation to prevent tether snagging, tension monitoring, and winch control.
+Environment & Perception
+tpt-t-marine-current: Ocean current modeling. Reads ADCP (Acoustic Doppler Current Profiler) data and predicts drift for AUVs and ASVs.
+tpt-t-marine-tide: Tidal prediction and tidal stream modeling. Uses harmonic constituents to predict currents at any point, critical for ROV operations near structures.
+tpt-t-marine-sonar: Multibeam, sidescan, and forward-looking sonar processing. SIMD-accelerated beamforming and zero-copy point cloud generation.
+tpt-t-marine-pressure: Depth/pressure sensor management. Handles temperature compensation, hysteresis correction, and leak detection via pressure differential monitoring.
+Safety & Comms
+tpt-t-marine-safety: Flooding detection, emergency buoyancy (dropping weights / inflating bladders), thermal shutdown, and "lost vehicle" procedures (ascending to surface after timeout).
+tpt-t-marine-comms: Multi-modal link manager. Seamlessly transitions between acoustic (underwater), RF (surface), cellular (near shore), and satellite (open ocean). Implements custom store-and-forward for when all links are down.
+tpt-t-marine-colregs: COLREGS (International Regulations for Preventing Collisions at Sea) compliance for ASVs. Deterministic decision-making for give-way vs. stand-on situations.
+Offshore & Infrastructure
+tpt-t-marine-offshore: Wind turbine foundation inspection, subsea cable routing, oil & gas wellhead monitoring.
+tpt-t-marine-aquaculture: Fish cage net inspection, biomass estimation via hydroacoustics, mortality detection.
+4. Extreme Performance Tactics (Marine-Specific)
+The ocean environment forces performance decisions that no other domain faces.
+4.1. The 100-bps Acoustic Protocol
+Acoustic modems typically offer 100 bps to 10 kbps, with 500ms-2s latency and 30-60% packet loss. Standard TCP/IP is completely unusable here.
+The Solution: tpt-t-marine-acoustic implements a custom Adaptive ARQ (Automatic Repeat reQuest) protocol. It uses a sliding window with forward error correction (Reed-Solomon) tuned to the measured packet loss rate. Mission-critical commands (e.g., "abort, surface now") are sent with triple-redundancy. Telemetry is heavily delta-compressed using rkyv—only state changes are transmitted.
+Zero-Allocation: The entire protocol stack runs in a pre-allocated 4KB buffer. No heap, no Vec, no String.
+4.2. SIMD-Accelerated INS/DVL Fusion
+An AUV without GPS relies entirely on dead reckoning from its IMU and DVL. The EKF (Extended Kalman Filter) must run at 200Hz to prevent drift.
+The Solution: tpt-t-marine-nav uses portable-simd to vectorize the matrix multiplications in the EKF prediction step. The 15-state filter (position, velocity, attitude, biases) executes in <200 microseconds on a Cortex-A72, leaving the CPU free for mission logic.
+Zero-Copy Sensor Fusion: IMU and DVL packets are parsed directly from serial DMA buffers into the filter's state vector via rkyv casting.
+4.3. Zero-Allocation Multibeam Sonar
+A multibeam echosounder generates 512 beams per ping, at 20Hz, producing ~10,000 points/second. Standard point cloud libraries allocate on every ping.
+The Solution: tpt-t-marine-sonar uses a slab-allocated ring buffer of fixed-size point clouds. Each ping overwrites the oldest cloud. SIMD is used to apply sound-velocity corrections and ray-tracing in parallel across all 512 beams. The result is a deterministic 2ms per ping, regardless of scene complexity.
+4.4. Real-Time Tether Catenary Simulation
+An ROV tether in a 2-knot current forms a complex 3D catenary. If the ROV moves unpredictably, the tether can snag on subsea structures.
+The Solution: tpt-t-marine-tether models the tether as a lumped-mass chain (50 nodes) solved via Verlet integration. The simulation runs at 100Hz on a dedicated pinned core, predicting tether shape 5 seconds into the future. If a snag is predicted, it alerts the ROV pilot via tpt-teleop to adjust course.
+4.5. COLREGS as Deterministic State Machine
+Maritime law (COLREGS) defines 30+ rules for vessel interaction. An ASV must comply legally.
+The Solution: tpt-t-marine-colregs encodes the rules as a deterministic finite state machine, not a neural network. Every decision (give-way, stand-on, sound whistle signal) is traceable, auditable, and legally defensible. The entire rule evaluation runs in <50 microseconds per detected vessel.
+5. The "Marine Operations" Feature Matrix (v1)
+5.1. AUV Mission Execution
+Adaptive Sampling: The AUV detects a thermocline or plume. It autonomously modifies its mission to spend more time sampling that feature, within battery and time budgets.
+Comms-Triggered Behaviors: When the AUV surfaces, it establishes a satellite link and transmits a compressed summary. The shore operator can send new waypoints or abort commands before the next dive.
+Sleep-Wake Power Management: For multi-month deployments, the AUV sleeps 99% of the time, waking only for scheduled profiles or acoustic page-up calls from the surface buoy.
+5.2. ROV Operations with Human-in-the-Loop
+Seamless Teleoperation: Integrates directly with tpt-teleop for pilot control. The pilot's joystick inputs are translated into 6DOF thruster commands with rate limiting and collision avoidance.
+Tether-Aware Motion: The ROV will not move in a direction that would increase tether snag risk, even if the pilot commands it. The pilot receives haptic feedback through the joystick when approaching tether limits.
+Fiber-Optic Bandwidth Management: Over the tether's fiber link, tpt-t-marine-comms prioritizes control packets (<1ms) over video (H.265 hardware-encoded) over sonar data.
+5.3. ASV Surface Operations
+Dynamic Positioning (DP): The ASV holds position within 1 meter using GPS, IMU, and thruster feedback, even in 2-knot currents.
+COLREGS Compliance: The ASV detects other vessels via AIS, radar, and cameras. It classifies the encounter (head-on, crossing, overtaking) and executes the correct COLREGS maneuver.
+Wave Compensation: For offshore personnel transfer or crane operations, the ASV actively compensates for heave, pitch, and roll using its thrusters.
+5.4. Hostile Environment Survival
+Leak Detection: Every sealed compartment has a pressure sensor. tpt-t-marine-pressure detects a 0.1 PSI increase (indicating water ingress) and triggers emergency buoyancy in <100 milliseconds.
+Biofouling Compensation: As barnacles grow on the hull, drag increases. tpt-t-marine-nav detects the increased drag signature and automatically derates mission speed to preserve battery.
+Lost Vehicle Procedures: If the AUV loses all comms for >2 hours, it autonomously ascends, drifts on the surface, and transmits a GPS beacon via satellite until recovered.
+6. The Complete "Subsea Pipeline Survey" Data Flow
+Here is the lifecycle of a typical mission, demonstrating the zero-allocation flow across the stack:
+The Mission Plan: The shore operator uploads a 50km pipeline survey route to the ASV via satellite. The ASV is carrying an AUV in its moon pool.
+The Deployment: The ASV transits to the start point using tpt-t-marine-asv and tpt-t-marine-colregs. It dynamically positions over the pipeline start.
+The Dive: The AUV is released. tpt-t-marine-buoyancy trims the vehicle neutral. tpt-t-marine-nav fuses the INS/DVL/pressure to establish a 3D position (GPS is now gone).
+The Survey: The AUV follows the pipeline at 3 knots, 50m above the seabed. tpt-t-marine-sonar generates multibeam point clouds at 20Hz. tpt-t-marine-core runs edge AI to detect spans, anomalies, and debris.
+The Acoustic Check-In: Every 30 minutes, the AUV ascends to 10m depth. tpt-t-marine-acoustic transmits a 200-byte status report to the ASV at 1200 bps. The ASV relays via satellite to shore.
+The Adaptive Decision: The edge AI detects a potential pipeline anomaly. tpt-t-marine-auv modifies the mission to spend an extra 15 minutes doing a high-res sidescan pass.
+The Recovery: Mission complete. The AUV surfaces, establishes a high-bandwidth WiFi link with the ASV, and transfers 50GB of sonar data in 20 minutes. The ASV reels the AUV back into the moon pool.
+The Handoff: The ASV returns to port. The data is transferred to shore, where engineers review the anomalies flagged by the AUV's edge AI.
+7. Dependency Matrix (The "No-Bloat" Stack)
+Functionality
+Standard Ecosystem (Banned/Avoided)
+tpt-t-marine Custom / Lightweight Choice
+License
+Acoustic Protocol
+TCP/IP, MQTT (too heavy)
+Custom Adaptive ARQ over raw serial/UDP
+MIT
+INS/DVL Fusion
+Heavy robotics frameworks, nalgebra
+Custom SIMD EKF, portable-simd
+MIT
+Sonar Processing
+OpenCV, pcl (Point Cloud Library)
+Custom slab-allocated beamformer
+MIT
+Tether Physics
+Rigid-body dynamics engines
+Custom lumped-mass Verlet integrator
+MIT
+NMEA / Marine Bus
+nmea crate (allocates)
+Custom zero-alloc NMEA 0183/2000 parser
+MIT
+Serialization
+serde, bincode
+rkyv (Zero-copy)
+MIT
+IPC / Telemetry
+tokio::sync, crossbeam
+Custom tpt-teleop-ring (Lock-free SPSC/MPSC)
+MIT
+Navigation Math
+geo, proj (heavy)
+Custom WGS84 / UTM / ECEF converters
+MIT
+COLREGS
+ML-based collision avoidance
+Deterministic FSM, zero allocations
+MIT
+8. Developer Experience & Simulation
+Testing underwater vehicles requires access to the ocean, which is expensive and weather-dependent. tpt-teleop-marine includes a comprehensive simulation stack.
+tpt-t-marine-sim: A headless simulator that models:
+6DOF vehicle dynamics with hydrodynamic drag coefficients
+Realistic acoustic channel models (multi-path, loss, latency)
+Ocean current fields (user-defined or from HYCOM/ROMS ocean models)
+Tidal harmonics
+Sonar returns from synthetic seabed geometries
+Visualizer: A lightweight egui (MIT) binary that renders:
+3D vehicle trajectories with depth color-coding
+Acoustic link quality heatmaps
+Tether catenary visualization
+Multibeam sonar point clouds
+COLREGS encounter scenarios for ASV testing
+The simulator runs at 100x real-time, allowing developers to test a 30-day AUV mission in 7 hours of wall-clock time.
+9. Conclusion
+tpt-teleop-marine v1 brings the tpt ecosystem's uncompromising philosophy to the most challenging robotics environment on Earth.
+By writing a custom 100-bps acoustic protocol, fusing INS/DVL with SIMD-accelerated Kalman filters, processing multibeam sonar in slab-allocated ring buffers, and encoding COLREGS as a deterministic state machine, tpt-teleop-marine proves that you don't need heavy, cloud-dependent middleware to operate in the deep ocean.
+It is a battle-ready, commercially unencumbered operating system for the future of offshore wind, subsea infrastructure, scientific oceanography, and maritime defense—capable of running on a $500 AUV or a $50M ROV, from the surface to 6000 meters depth, all while maintaining the strict MIT-only dependency chain that defines the tpt ecosystem.
+
+tpt-teleop-marine → tpt-teleop Integration
+Adapter Crate: tpt-t-marine-teleop (new crate in the marine repo)
+Integration Flow:
+An ROV is inspecting a subsea pipeline. The pilot is on a surface vessel.
+tpt-teleop provides the primary teleoperation link: joystick → ROV thrusters, video feed → pilot's monitor.
+tpt-t-marine-teleop receives ControlCommand and translates it into 6DOF thruster commands (e.g., "thrust forward at 10%, yaw left at 5%").
+The pilot also controls the ROV's manipulator arm via a second joystick or VR gloves.
+tpt-t-marine-tether monitors tether tension and overrides the pilot's commands if a snag is detected.
+Domain-Specific Adaptation:
+Acoustic Comms Fallback: If the fiber-optic tether is cut, tpt-t-marine-teleop switches to acoustic control via tpt-t-marine-acoustic, reducing the control rate to 1Hz but maintaining critical command capability.
+Buoyancy Compensation: The adapter automatically compensates for the ROV's buoyancy changes as it deploys tools or collects samples.
+Tether-Aware Motion: The adapter prevents the pilot from commanding movements that would increase tether snag risk.
