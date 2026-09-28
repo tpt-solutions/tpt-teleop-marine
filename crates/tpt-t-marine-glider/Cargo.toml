@@ -1,0 +1,17 @@
+[package]
+name = "tpt-t-marine-glider"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Buoyancy-driven glider control for tpt-teleop-marine: sawtooth flight on buoyancy changes and rudder only, ultra-low-power trans-oceanic profiles"
+
+[dependencies]
+tpt-t-marine-core = { workspace = true }
+rkyv = { workspace = true }
+bytecheck = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,78 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+# `tpt-t-marine-nav` and `tpt-t-marine-sonar` require nightly
+# (`#![feature(portable_simd)]`) and are excluded from the default stable
+# workspace build. Each carries its own crate-local `rust-toolchain.toml`
+# and is built by a dedicated nightly CI job (see `.github/workflows/ci.yml`);
+# the rest of the workspace, including the safety-critical crates, stays on
+# stable Rust.
+# `tpt-t-marine-visualizer` is excluded because the egui/winit dependency
+# chain sits outside the strict MIT-chain `deny.toml` policy that workspace
+# members are audited under; it builds in isolation with its own CI job.
+exclude = [
+    "crates/tpt-t-marine-nav",
+    "crates/tpt-t-marine-sonar",
+    "crates/tpt-t-marine-visualizer",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+authors = ["TPT Solutions"]
+repository = "https://github.com/tpt-solutions/tpt-teleop-marine"
+homepage = "https://tpt.solutions/tpt-teleop-marine"
+documentation = "https://docs.rs/tpt-t-marine-core"
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "warn"
+
+[workspace.lints.clippy]
+undocumented_unsafe_blocks = "warn"
+
+[workspace.dependencies]
+# Internal crates
+tpt-t-domain-bridge = { path = "crates/tpt-t-domain-bridge" }
+tpt-t-marine-core = { path = "crates/tpt-t-marine-core" }
+tpt-t-marine-pressure = { path = "crates/tpt-t-marine-pressure" }
+tpt-t-marine-buoyancy = { path = "crates/tpt-t-marine-buoyancy" }
+tpt-t-marine-acoustic = { path = "crates/tpt-t-marine-acoustic" }
+tpt-t-marine-comms = { path = "crates/tpt-t-marine-comms" }
+tpt-t-marine-current = { path = "crates/tpt-t-marine-current" }
+tpt-t-marine-tide = { path = "crates/tpt-t-marine-tide" }
+tpt-t-marine-safety = { path = "crates/tpt-t-marine-safety" }
+tpt-t-marine-colregs = { path = "crates/tpt-t-marine-colregs" }
+tpt-t-marine-auv = { path = "crates/tpt-t-marine-auv" }
+tpt-t-marine-glider = { path = "crates/tpt-t-marine-glider" }
+tpt-t-marine-tether = { path = "crates/tpt-t-marine-tether" }
+tpt-t-marine-rov = { path = "crates/tpt-t-marine-rov" }
+tpt-t-marine-asv = { path = "crates/tpt-t-marine-asv" }
+tpt-t-marine-offshore = { path = "crates/tpt-t-marine-offshore" }
+tpt-t-marine-aquaculture = { path = "crates/tpt-t-marine-aquaculture" }
+tpt-t-marine-teleop = { path = "crates/tpt-t-marine-teleop" }
+tpt-t-marine-sim = { path = "crates/tpt-t-marine-sim" }
+# Excluded crates are referenced by path from dependents that need their
+# types at compile time of this workspace (none today: nav/sonar are leaf
+# producers consumed via the core wire prelude).
+
+# Platform (all dual MIT OR Apache-2.0 — see deny.toml MIT-chain policy).
+# Members gate these behind [target.'cfg(...)'.dependencies] as needed;
+# deny.toml audits them on every CI target regardless of host OS.
+libc = "0.2"
+rkyv = { version = "0.8", features = ["bytecheck"] }
+bytecheck = "0.8"
+windows-sys = { version = "0.60", features = [
+    "Win32_Foundation",
+    "Win32_System_Threading",
+] }
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+debug = true
+
+[profile.bench]
+inherits = "release"

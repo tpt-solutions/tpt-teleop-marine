@@ -1,0 +1,24 @@
+[package]
+name = "tpt-t-marine-nav"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+authors = ["TPT Solutions"]
+repository = "https://github.com/tpt-solutions/tpt-teleop-marine"
+description = "GPS-denied 3D navigation for tpt-teleop-marine: 15-state SIMD EKF fusing INS, DVL, pressure depth, and acoustic positioning (nightly-only)"
+
+[dependencies]
+tpt-t-marine-core = { path = "../tpt-t-marine-core" }
+rkyv = { version = "0.8", features = ["bytecheck"] }
+bytecheck = "0.8"
+
+[[bench]]
+name = "ekf"
+harness = false
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"

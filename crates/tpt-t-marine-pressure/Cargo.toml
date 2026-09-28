@@ -1,0 +1,16 @@
+[package]
+name = "tpt-t-marine-pressure"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Depth/pressure sensor management for tpt-teleop-marine: temperature compensation, hysteresis correction, and leak detection via pressure-differential monitoring"
+
+[dependencies]
+rkyv = { workspace = true }
+bytecheck = { workspace = true }
+
+[lints]
+workspace = true

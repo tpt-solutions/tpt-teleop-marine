@@ -1,0 +1,17 @@
+[package]
+name = "tpt-t-marine-colregs"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Deterministic COLREGS compliance for tpt-teleop-marine ASVs: encounter classification, give-way/stand-on state machines, whistle signals, auditable decision logging"
+
+[dependencies]
+tpt-t-marine-core = { workspace = true }
+rkyv = { workspace = true }
+bytecheck = { workspace = true }
+
+[lints]
+workspace = true

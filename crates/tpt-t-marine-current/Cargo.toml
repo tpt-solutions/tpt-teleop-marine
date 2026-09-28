@@ -1,0 +1,17 @@
+[package]
+name = "tpt-t-marine-current"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Ocean current modeling for tpt-teleop-marine: ADCP ingestion and drift prediction for AUVs and ASVs"
+
+[dependencies]
+tpt-t-marine-core = { workspace = true }
+rkyv = { workspace = true }
+bytecheck = { workspace = true }
+
+[lints]
+workspace = true

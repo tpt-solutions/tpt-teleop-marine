@@ -1,0 +1,15 @@
+[package]
+name = "tpt-t-marine-offshore"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Offshore & infrastructure applications for tpt-teleop-marine: wind-turbine foundation inspection, subsea cable routing, and wellhead monitoring"
+
+[dependencies]
+tpt-t-marine-core = { workspace = true }
+
+[lints]
+workspace = true

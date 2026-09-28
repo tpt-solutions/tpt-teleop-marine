@@ -1,0 +1,17 @@
+[package]
+name = "tpt-t-marine-tide"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Tidal prediction for tpt-teleop-marine: harmonic constituent model and tidal-stream prediction at arbitrary points"
+
+[dependencies]
+tpt-t-marine-core = { workspace = true }
+rkyv = { workspace = true }
+bytecheck = { workspace = true }
+
+[lints]
+workspace = true

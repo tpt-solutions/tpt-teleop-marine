@@ -1,0 +1,17 @@
+[package]
+name = "tpt-t-marine-acoustic"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Ultra-low-bandwidth acoustic protocol stack for tpt-teleop-marine: adaptive ARQ, Reed-Solomon FEC, triple-redundant critical sends, delta telemetry — zero-allocation in a 4 KB buffer"
+
+[dependencies]
+tpt-t-marine-core = { workspace = true }
+rkyv = { workspace = true }
+bytecheck = { workspace = true }
+
+[lints]
+workspace = true

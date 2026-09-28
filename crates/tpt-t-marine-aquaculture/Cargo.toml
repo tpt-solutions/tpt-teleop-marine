@@ -1,0 +1,15 @@
+[package]
+name = "tpt-t-marine-aquaculture"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Aquaculture applications for tpt-teleop-marine: fish-cage net inspection, hydroacoustic biomass estimation, and mortality detection"
+
+[dependencies]
+tpt-t-marine-core = { workspace = true }
+
+[lints]
+workspace = true

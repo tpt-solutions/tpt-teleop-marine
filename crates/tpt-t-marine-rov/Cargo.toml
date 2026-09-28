@@ -1,0 +1,18 @@
+[package]
+name = "tpt-t-marine-rov"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Tethered ROV control for tpt-teleop-marine: 6DOF thruster coordination, manipulator arm control, tether-aware motion limiting, and pilot haptics"
+
+[dependencies]
+tpt-t-marine-core = { workspace = true }
+tpt-t-marine-tether = { workspace = true }
+rkyv = { workspace = true }
+bytecheck = { workspace = true }
+
+[lints]
+workspace = true

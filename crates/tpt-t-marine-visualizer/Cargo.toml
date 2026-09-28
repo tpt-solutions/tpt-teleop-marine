@@ -1,0 +1,18 @@
+[package]
+name = "tpt-t-marine-visualizer"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+license = "MIT OR Apache-2.0"
+authors = ["TPT Solutions"]
+repository = "https://github.com/tpt-solutions/tpt-teleop-marine"
+description = "egui visualizer for tpt-t-marine-sim runs: vehicle trajectories with depth color-coding, acoustic link heatmaps, tether catenaries, multibeam point clouds, COLREGS scenarios (excluded from the stable workspace)"
+
+[dependencies]
+eframe = "0.28"
+
+[lints.rust]
+unsafe_op_in_unsafe_fn = "warn"
+
+[lints.clippy]
+undocumented_unsafe_blocks = "warn"

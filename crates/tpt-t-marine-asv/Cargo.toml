@@ -1,0 +1,19 @@
+[package]
+name = "tpt-t-marine-asv"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Autonomous surface vessel control for tpt-teleop-marine: waypoint following, dynamic positioning, COLREGS maneuvering, and wave compensation"
+
+[dependencies]
+tpt-t-marine-core = { workspace = true }
+tpt-t-marine-colregs = { workspace = true }
+tpt-t-marine-current = { workspace = true }
+rkyv = { workspace = true }
+bytecheck = { workspace = true }
+
+[lints]
+workspace = true

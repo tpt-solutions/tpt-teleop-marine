@@ -1,0 +1,24 @@
+[package]
+name = "tpt-t-marine-sim"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Headless marine simulator: 6DOF vehicle dynamics with hydrodynamic drag, acoustic channel model, ocean current fields, and tidal harmonics"
+
+[dependencies]
+tpt-t-marine-core = { workspace = true }
+tpt-t-marine-acoustic = { workspace = true }
+tpt-t-marine-auv = { workspace = true }
+tpt-t-marine-tether = { workspace = true }
+tpt-t-marine-safety = { workspace = true }
+tpt-t-marine-colregs = { workspace = true }
+tpt-t-marine-teleop = { workspace = true }
+tpt-t-domain-bridge = { workspace = true }
+rkyv = { workspace = true }
+bytecheck = { workspace = true }
+
+[lints]
+workspace = true

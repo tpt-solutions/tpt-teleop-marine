@@ -1,0 +1,21 @@
+[package]
+name = "tpt-t-marine-teleop"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "The marine DomainTeleopInterface adapter: control-command translation, tether-aware override, acoustic fallback at 1 Hz, buoyancy compensation, and jerk-free handover"
+
+[dependencies]
+tpt-t-marine-core = { workspace = true }
+tpt-t-marine-acoustic = { workspace = true }
+tpt-t-marine-tether = { workspace = true }
+tpt-t-marine-rov = { workspace = true }
+tpt-t-domain-bridge = { workspace = true }
+rkyv = { workspace = true }
+bytecheck = { workspace = true }
+
+[lints]
+workspace = true

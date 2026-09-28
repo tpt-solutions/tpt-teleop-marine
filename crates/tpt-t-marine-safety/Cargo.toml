@@ -1,0 +1,18 @@
+[package]
+name = "tpt-t-marine-safety"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Safety subsystem for tpt-teleop-marine: flooding reflexes, emergency buoyancy, thermal shutdown, lost-vehicle procedure, and teleop-assist integration"
+
+[dependencies]
+tpt-t-marine-core = { workspace = true }
+tpt-t-domain-bridge = { workspace = true }
+rkyv = { workspace = true }
+bytecheck = { workspace = true }
+
+[lints]
+workspace = true

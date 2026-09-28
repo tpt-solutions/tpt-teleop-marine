@@ -1,0 +1,17 @@
+[package]
+name = "tpt-t-marine-tether"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "ROV tether management (TMS) for tpt-teleop-marine: lumped-mass Verlet catenary simulation at 100 Hz, 5-second-ahead shape prediction, snag alerts, tension monitoring and winch control"
+
+[dependencies]
+tpt-t-marine-core = { workspace = true }
+rkyv = { workspace = true }
+bytecheck = { workspace = true }
+
+[lints]
+workspace = true
